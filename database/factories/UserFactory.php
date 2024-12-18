@@ -1,44 +1,51 @@
 <?php
 
-namespace Database\Factories;
+namespace Database\Seeders;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use App\Models\User;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
- */
-class UserFactory extends Factory
+class DatabaseSeeder extends Seeder
 {
     /**
-     * The current password being used by the factory.
+     * Seed the application's database.
      */
-    protected static ?string $password;
-
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
-    public function definition(): array
+    public function run(): void
     {
-        return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
-        ];
-    }
-
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+        User::factory()->create([
+            'name' => 'Piotr Jura',
+            'email' => 'piotr@jura.com',
         ]);
+        User::factory(300)->create();
+
+        $users = User::all()->shuffle();
+
+        for ($i = 0; $i < 20; $i++) {
+            \App\Models\Employer::factory()->create([
+                'user_id' => $users->pop()->id
+            ]);
+        }
+
+        $employers = \App\Models\Employer::all();
+
+        for ($i = 0; $i < 100; $i++) {
+            \App\Models\Job::factory()->create([
+                'employer_id' => $employers->random()->id
+            ]);
+        }
+
+        foreach ($users as $user) {
+            $jobs = \App\Models\Job::inRandomOrder()
+                ->take(rand(0, 4))
+                ->get();
+
+            foreach ($jobs as $job) {
+                \App\Models\JobApplication::factory()->create([
+                    'job_id' => $job->id,
+                    'user_id' => $user->id
+                ]);
+            }
+        }
     }
 }
